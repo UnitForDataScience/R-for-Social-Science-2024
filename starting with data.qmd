@@ -1,0 +1,191 @@
+---
+title: "Starting with Data"
+format: html
+editor: visual
+author: "Namig Abbasov"
+---
+
+```{r}
+rm(list = ls())
+
+setwd("/Users/namigabbasov/Desktop")               ### set working directory. This is directory in my machine. it will be different in your machine
+library(tidyverse)                                 ### load library 
+```
+
+```{r}
+interviews<-read.csv("https://raw.githubusercontent.com/datacarpentry/r-socialsci/main/episodes/data/SAFI_clean.csv")    ### pulls data directly from repository
+```
+
+
+## Inspecting data frames
+
+```{r}
+view(interviews)           ### view data- you can close after viewing 
+dim(interviews)            ### dimensions
+nrow(interviews)           ### number of rows
+ncol(interviews)           ### number of columns 
+head(interviews)           ### explore top rows
+tail(interviews)           ### explore rows at the end 
+names(interviews)          ### get names of columns 
+str(interviews)            ### length, content,structure of columns 
+summary(interviews)        ### summary statistics  
+glimpse(interviews)        ### data preview 
+```
+
+## Subsetting data frames
+
+```{r}
+interviews[1, 1]               ### get only one cell/element 
+interviews[[1]]                ### get one column as a vector 
+interviews[1]                  ### get one column as tibble 
+interviews[1:3, 5]             ### first three elements in 5th column
+interviews[3, ]                ### fifth row of tibble 
+interviews[1:6, ]              ### head(interviews)
+interview [, -4]               ### exclude 4th column
+interviews[-c(7:131), ]        ### head(interviews)
+interviews["village"]          ### subset by column name(as tibble)
+interviews[, "village"]        ### subset by column name(as tibble)
+interviews[["village"]]        ### subset by column name(as vector)
+interviews$village             ### subset by column name(as vector)
+```
+```{r}
+mydata<-interviews[c("village", "rooms", "no_meals")]
+view(mydata)
+```
+
+```{r}
+names(interviews)
+```
+
+
+### Exercise
+
+1.  Create a tibble (interviews_100) containing only the data in row 100 of the interviews dataset.
+
+```{r}
+interviews_100 <- interviews[100, ]
+```
+
+Now, continue using interviews for each of the following activities:
+
+2.  Notice how nrow() gave you the number of rows in the tibble?
+
+-   Use that number to pull out just that last row in the tibble.
+-   Compare that with what you see as the last row using tail() to make sure it's meeting expectations.
+-   Pull out that last row using nrow() instead of the row number.
+-   Create a new tibble (interviews_last) from that last row.
+
+```{r}
+n_rows <- nrow(interviews)
+interviews_last <- interviews[n_rows, ]
+```
+
+3.  Using the number of rows in the interviews dataset that you found in question 2, extract the row that is in the middle of the dataset. Store the content of this middle row in an object named interviews_middle. (hint: This dataset has an odd number of rows, so finding the middle is a bit trickier than dividing n_rows by 2. Use the median( ) function and what you've learned about sequences in R to extract the middle row!
+
+```{r}
+interviews_middle <- interviews[median(1:n_rows), ]
+```
+
+4.  Combine nrow () with the - notation above to reproduce the behavior of head(interviews), keeping just the first through 6th rows of the interviews dataset.
+
+```{r}
+interviews_head <- interviews[-(7:n_rows), ]
+```
+
+## Factors
+```{r}
+### make a factor with two levels - c("earth", "cement", "cement", "earth") and save it as respondent_floor_type
+respondent_floor_type<-factor(c("earth", "cement","cement", "earth"))
+respondent_floor_type
+```
+
+```{r}
+levels(respondent_floor_type)                       ### check levels
+nlevels(respondent_floor_type)                      ### check number of levels - nlevels 
+```
+```{r}
+is.factor(interviews$village)                       ### check if it is factor 
+``` 
+
+
+```{r}
+### What about it we wanted to reorder levels
+respondent_floor_type<-factor(respondent_floor_type, levels = c("earth", "cement") )
+respondent_floor_type
+```
+
+```{r}
+### Recode one of levels
+respondent_floor_type_ordered<-fct_recode(respondent_floor_type, brick ="cement")
+respondent_floor_type_ordered 
+```
+```{r}
+?fct_recode                        ### check info about the function 
+help(fct_recode)                   ### check info about the function 
+```
+
+
+```{r}
+### Include an order
+respondent_floor_type_ordered<-factor(respondent_floor_type, ordered = TRUE)
+respondent_floor_type_ordered
+```
+
+```{r}
+mychar<-as.character(respondent_floor_type_ordered)         ### convert to a character type
+is.character(mychar)                                        ### chek if is character 
+```
+
+```{r}
+### convert to numeric - wrong way
+year_fct <- factor(c(1990, 1983, 1977, 1998, 1990))
+as.numeric(year_fct)
+```
+
+```{r}
+### convert to numeric - correct way 
+as.numeric(as.character(year_fct)) 
+```
+
+```{r}
+### convert to numeric - recommended way 
+ as.numeric(levels(year))
+```
+
+```{r}
+### rename factors: memb_assoc
+memb_assoc <- interviews$memb_assoc
+memb_assoc <- as.factor(memb_assoc)
+memb_assoc
+```
+
+```{r}
+#plot it: memb_assoc
+plot(memb_assoc)
+```
+
+## Formatting Dates
+
+```{r}
+### let's explore data types
+str(interviews)
+```
+
+```{r}
+### load lubridate library if you have older tidyverse
+library(lubridate) 
+```
+
+```{r}
+### grab interview_date columns and save it as dates
+dates <- interviews$interview_date
+str(dates)
+```
+
+```{r}
+interviews$day <- day(dates)
+interviews$month <- month(dates)
+interviews$year <- year(dates)
+interviews
+```
+

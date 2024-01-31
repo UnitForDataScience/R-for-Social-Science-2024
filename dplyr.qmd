@@ -1,0 +1,200 @@
+---
+title: "Data Wrangling with dplyr"
+format: html
+editor: visual
+---
+
+```{r}
+interviews<-read.csv("https://raw.githubusercontent.com/datacarpentry/r-socialsci/main/episodes/data/SAFI_clean.csv")
+```
+
+## What is an R package?
+
+```{r}
+library(tidyverse)
+```
+
+## Learning dplyr: verbs 
+
+-   select(): subset columns
+-   filter(): subset rows on conditions
+-   mutate(): create new columns by using information from other columns
+-   group_by() and summarize(): create summary statistics on grouped data
+-   arrange(): sort results
+-   count(): count discrete values
+
+## Selecting columns and filtering rows
+
+```{r}
+### select columns:  village, no_membrs, months_lack_food, village:respondent_wall_type, "village","no_membrs","months_lack_food")
+library(dplyr)
+select(interviews, village, no_membrs, months_lack_food)
+interviews[c("village","no_membrs","months_lack_food")]
+select(interviews,village:respondent_wall_type)
+```
+
+```{r}
+### filters observations where village name is "Chirodzo"
+filter(interviews, village == "Chirodzo")
+```
+
+```{r}
+### filters observations with "and" operator (comma)
+### village == "Chirodzo",rooms > 1, no_meals > 2)
+
+filter(interviews, village == "Chirodzo" & rooms > 1 & no_meals > 2)
+```
+
+```{r}
+### filters observations with "&" logical operator
+
+```
+
+```{r}
+### filters observations with "|" logical operator(or)
+### village =="Chirodzo" | village == "Ruaca"
+
+filter(interviews, village =="Chirodzo"|village == "Ruaca")
+```
+
+
+## Selecting and Filtering the Same Data
+
+```{r}
+### multiple steps: filter by village == "Chirodzo" and then select village:respondent_wall_type
+myfilter <- filter(interviews, village =="Chirodzo")
+final_data<-select(myfilter, village:rooms)
+```
+
+```{r}
+view(myfilter)
+view(final_data)
+```
+
+
+
+```{r}
+### nested functions 
+interviews_ch <- select(filter(interviews, village == "Chirodzo"),
+                         village:respondent_wall_type)
+```
+
+```{r}
+### Pipes
+library(magrittr)
+interviews %>%
+    filter(village == "Chirodzo") %>%
+    select(village:respondent_wall_type)
+```
+
+```{r}
+### create a new object 
+interviews_ch <- interviews %>%
+    filter(village == "Chirodzo") %>%
+    select(village:respondent_wall_type)
+```
+
+### Exercise
+
+Using pipes, subset the interviews data to include interviews where respondents were members of an irrigation association (memb_assoc) and retain only the columns affect_conflicts, liv_count, and no_meals.
+
+```{r}
+interviews %>%
+    filter(memb_assoc == "yes") %>%
+    select(affect_conflicts, liv_count, no_meals)
+```
+
+## Mutate
+
+```{r}
+### add a new column: people_per_room = no_membrs / rooms
+interviews %>%
+    mutate(people_per_room = no_membrs / rooms)
+```
+
+```{r}
+### filter NAs out from memb_assoc, then mutate
+interviews %>%
+    filter(!is.na(memb_assoc)) %>%
+    mutate(people_per_room = no_membrs / rooms)
+```
+
+### Exercise
+
+Create a new dataframe from the interviews data that meets the following criteria: contains only the village column and a new column called total_meals containing a value that is equal to the total number of meals served in the household per day on average (no_membrs times no_meals). Only the rows where total_meals is greater than 20 should be shown in the final dataframe.
+
+Hint: think about how the commands should be ordered to produce this data frame!
+
+```{r}
+interviews_total_meals <- interviews %>%
+    mutate(total_meals = no_membrs * no_meals) %>%
+    filter(total_meals > 20) %>%
+    select(village, total_meals)
+```
+
+## group_by() and summarize()
+
+```{r}
+### group by village and then get mean no_membrs, mean_no_membrs = mean(no_membrs) 
+
+interviews %>%
+    group_by(village) %>%
+    summarize(mean_no_membrs = mean(no_membrs))
+```
+
+```{r}
+### group by village and memb_assoc, and then summarize by mean no_membrs 
+interviews %>%
+    group_by(village, memb_assoc) %>%
+    summarize(mean_no_membrs = mean(no_membrs))
+```
+
+```{r}
+### you can ungroup as well 
+interviews %>%
+    group_by(village, memb_assoc) %>%
+    summarize(mean_no_membrs = mean(no_membrs)) %>%
+    ungroup()
+```
+
+```{r}
+### you can also filter before grouping and summarizing
+interviews %>%
+    filter(!is.na(memb_assoc)) %>%
+    group_by(village, memb_assoc) %>%
+    summarize(mean_no_membrs = mean(no_membrs))
+```
+
+```{r}
+### you can arrange as well after grouping and summarizing 
+
+interviews %>%
+    filter(!is.na(memb_assoc)) %>%
+    group_by(village, memb_assoc) %>%
+    summarize(mean_no_membrs = mean(no_membrs),
+              min_membrs = min(no_membrs)) %>%
+    arrange(min_membrs)
+```
+
+```{r}
+### arrange everything in descending order 
+interviews %>%
+    filter(!is.na(memb_assoc)) %>%
+    group_by(village, memb_assoc) %>%
+    summarize(mean_no_membrs = mean(no_membrs),
+              min_membrs = min(no_membrs)) %>%
+    arrange(desc(min_membrs))
+```
+
+## Counting
+
+```{r}
+interviews %>%
+    count(village)
+```
+
+```{r}
+### sort = true
+interviews %>%
+    count(village, sort = TRUE)
+```
