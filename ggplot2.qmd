@@ -1,0 +1,230 @@
+---
+title: "ggplot2"
+format: html
+editor: visual
+auhor: "Namig Abbasov"
+---
+## Getting Data for Visulization with ggplot2
+```{r}
+interviews<-read.csv("https://raw.githubusercontent.com/datacarpentry/r-socialsci/main/episodes/data/SAFI_clean.csv")
+
+interviews_plotting <- interviews %>%
+  ## pivot wider by items_owned
+  separate_longer_delim(items_owned, delim = ";") %>%
+  ## if there were no items listed, changing NA to no_listed_items
+  replace_na(list(items_owned = "no_listed_items")) %>%
+  mutate(items_owned_logical = TRUE) %>%
+  pivot_wider(names_from = items_owned,
+              values_from = items_owned_logical,
+              values_fill = list(items_owned_logical = FALSE)) %>%
+  ## pivot wider by months_lack_food
+  separate_longer_delim(months_lack_food, delim = ";") %>%
+  mutate(months_lack_food_logical = TRUE) %>%
+  pivot_wider(names_from = months_lack_food,
+              values_from = months_lack_food_logical,
+              values_fill = list(months_lack_food_logical = FALSE)) %>%
+  ## add some summary columns
+  mutate(number_months_lack_food = rowSums(select(., Jan:May))) %>%
+  mutate(number_items = rowSums(select(., bicycle:car)))
+```
+
+## Explore My Data Before Plotting 
+```{r}
+str(interviews_plotting)
+```
+
+## ggplot2 template
+```{r}
+#<DATA> %>%
+    #ggplot(aes(<MAPPINGS>)) +
+    #<GEOM_FUNCTION>()
+```
+
+## First Plot: Scatterplot 
+```{r}
+### Now let's plot our first graph
+interviews_plotting %>%                                         
+    ggplot(aes(x = no_membrs, y = number_items)) +
+    geom_point(aes(color= village, shape = village), alpha = .8)+
+  geom_smooth(method = "lm")+
+  labs(title = "Number of Items versus Number of Members",
+       x = "Number of Members",
+       y = "Mumber of Items",
+       color = "Village Name",
+       shape = "Village Name")
+```
+
+
+```{r}
+### Assign the plot to a variable 
+interviews_plot <- interviews_plotting %>%
+    ggplot(aes(x = no_membrs, y = number_items))
+
+### Now adding geom_point()
+interviews_plot +
+    geom_point()
+```
+
+## Boxplot
+```{r}
+### Boxplots to visualize the distribution of rooms for each wall type
+interviews_plotting %>%
+    ggplot(aes(x = respondent_wall_type, y = rooms)) +
+    geom_boxplot()
+```
+
+```{r}
+### Adding points to a boxplot 
+interviews_plotting %>%
+    ggplot(aes(x = respondent_wall_type, y = rooms)) +
+    geom_boxplot(alpha = 0) +
+    geom_jitter(alpha = 0.3,
+        color = "tomato",
+        width = 0.2,
+        height = 0.2)
+```
+
+
+## Barplot 
+```{r}
+interviews_plotting %>%
+    ggplot(aes(x = respondent_wall_type)) +
+    geom_bar()
+```
+
+
+```{r}
+### explore counts of respondent wall type by village: stacked bar 
+interviews_plotting %>%
+    ggplot(aes(x = respondent_wall_type)) +
+    geom_bar(aes(fill = village))
+```
+
+```{r}
+interviews_plotting %>%
+    ggplot(aes(x = respondent_wall_type)) +
+    geom_bar(aes(fill = village), position = "dodge")
+```
+
+```{r}
+### proportion of each housing type in each village
+percent_wall_type <- interviews_plotting %>%
+    filter(respondent_wall_type != "cement") %>%          ### remove cement as there is only one cement 
+    count(village, respondent_wall_type) %>%              ### get counts of each subcategory in village and wall type
+    group_by(village) %>%                   
+    mutate(percent = (n / sum(n)) * 100) %>%              ### make a new variable "percent"
+    ungroup()
+
+percent_wall_type %>%
+    ggplot(aes(x = village, y = percent, fill = respondent_wall_type)) +
+    geom_bar(stat = "identity", position = "dodge")
+```
+
+
+## Faceting
+```{r}
+percent_wall_type %>%
+    ggplot(aes(x = respondent_wall_type, y = percent, fill = village, color = village)) + 
+    geom_bar(stat = "identity", position = "dodge") +
+    labs(title="Proportion of wall type by village",
+         x="Wall Type",
+         y="Percent") +
+    facet_wrap(~ village)+
+  theme(legend.position = "none")          ### removes legend: it is redundant 
+```
+
+
+```{r}
+### Make background white
+
+percent_wall_type %>%
+    ggplot(aes(x = respondent_wall_type, y = percent)) +
+    geom_bar(stat = "identity", position = "dodge") +
+    labs(title="Proportion of wall type by village",
+         x="Wall Type",
+         y="Percent") +
+    facet_wrap(~ village, nrow=1) +
+    theme_bw() +                           ### set background to white 
+    theme(panel.grid = element_blank())    ### removes grid 
+```
+
+```{r}
+### proportion of respondents in each village who owned a particular item
+percent_items <- interviews_plotting %>%
+    group_by(village) %>%
+    summarize(across(bicycle:motorcyle, ~ sum(.x) / n() * 100)) %>%
+    pivot_longer(bicycle:motorcyle, names_to = "items", values_to = "percent")
+```
+
+```{r}
+percent_items %>%
+    ggplot(aes(x = village, y = percent)) +
+    geom_bar(stat = "identity", position = "dodge") +
+    facet_wrap(~ items) +
+    theme_bw() +
+    theme(panel.grid = element_blank())
+```
+
+## ggplot2 themes and Customization: theme_bw(), minimal, light, void 
+```{r}
+percent_items %>%
+    ggplot(aes(x = village, y = percent)) +
+    geom_bar(stat = "identity", position = "dodge") +
+    facet_wrap(~ items) +
+    labs(title = "Percent of respondents in each village who owned each item",
+         x = "Village",
+         y = "Percent of Respondents") +
+    theme_bw()
+```
+
+```{r}
+### add font size
+percent_items %>%
+    ggplot(aes(x = village, y = percent)) +
+    geom_bar(stat = "identity", position = "dodge") +
+    facet_wrap(~ items) +
+    labs(title = "Percent of respondents in each village who owned each item",
+         x = "Village",
+         y = "Percent of Respondents") +
+    theme_bw() +
+    theme(text = element_text(size = 16))
+```
+```{r}
+percent_items %>%
+    ggplot(aes(x = village, y = percent)) +
+    geom_bar(stat = "identity", position = "dodge") +
+    facet_wrap(~ items) +
+    labs(title = "Percent of respondents in each village \n who owned each item",
+         x = "Village",
+         y = "Percent of Respondents") +
+    theme_bw() +
+    theme(axis.text.x = element_text(colour = "grey20", size = 12, angle = 45,
+                                     hjust = 0.5, vjust = 0.5),
+          axis.text.y = element_text(colour = "grey20", size = 12),
+          text = element_text(size = 16))
+```
+```{r}
+grey_theme <- theme(axis.text.x = element_text(colour = "grey20", size = 12,
+                                               angle = 45, hjust = 0.5,
+                                               vjust = 0.5),
+                    axis.text.y = element_text(colour = "grey20", size = 12),
+                    text = element_text(size = 16),
+                    plot.title = element_text(hjust = 0.5))
+
+
+percent_items %>%
+    ggplot(aes(x = village, y = percent)) +
+    geom_bar(stat = "identity", position = "dodge") +
+    facet_wrap(~ items) +
+    labs(title = "Percent of respondents in each village \n who owned each item",
+         x = "Village",
+         y = "Percent of Respondents") +
+    grey_theme
+```
+
+
+
+
+
+
+
