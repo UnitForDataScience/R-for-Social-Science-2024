@@ -1,0 +1,326 @@
+---
+title: "Network Analysis"
+author: "Namig Abbasov"
+format: html
+editor: visual
+---
+
+# What is Network Analysis?
+
+Network analysis is a research method used to understand, visualize, and analyze the relationships between entities in a network. These entities, represented as nodes (or vertices), can be individuals, organizations, computers, proteins, etc., and the relationships between them are represented as edges (or links). Network analysis is widely used in various fields such as sociology, computer science, biology, and information technology, to examine social networks, biological networks, transport networks, and more.
+
+# What are Key Components of Social Network Analysis?
+
+**Nodes (or Vertices)**: These are individual actors within the network. In social contexts, nodes can be individuals, organizations, states, or any other entities capable of interacting. Nodes could be unimodal or multimodal. Nodes that are the same type of entities and have a single type of relationship are considered unimodal. So, homogeneous entities and single relationship type are two primary elements of unimodal nodes. The total opposite(Heterogeneous Entities and Multiple Relationship Types) is multimodal.
+
+**Edges (or connections/Links)**: These are relationships or interactions between the nodes. Edges can be directional or un-directional.Directional links indicate the direction of interaction from entity A to entity B (e.g. connections between popular social media account and their followers- at most cases, the directions are from popular accounts to followers as many popular accounts follow very few). Non-directional means a mutual relationship like friendship.Edges also could be weighted or un-weighted. Un-weighted edges tell us whether there is a connection or not in binary terms but don't demonstrate the extent of the connection.It get zero if there is no connection or 1 if there is connection. However, weighted edges show number, which is the strength of connection between two nodes.
+
+# Why do We Need Network Analysis?
+
+**Identify Key Actors or Nodes**: Network analysis uses various centrality measures to identify the most influential individuals or nodes in a network.
+
+**Analyse Dynamics Over Time** Network analysis is good at temporal analysis as well. It is used analyze how networks change over time, identifying patterns of growth, decay, or transformation. Emerging trends, formation or dissolution of groups, and evolution of influence among nodes could be studied using social network analysis. Examples include alliances, evolution of conflicts etc.
+
+**Detect Communities and Clusters**: Network analysis is used to ascertain clusters or groups of nodes that are more densely connected to each other than to nodes outside the group. Network analysis allows us to reveal subgroups, social circles, or functional modules within larger networks.
+
+**Understand Information Flow and Diffusion Paths**: Network analysis is useful to understand how information, diseases, or trends spread through a network. This includes identifying potential bottlenecks, super-spreaders, or the most efficient pathways for dissemination.
+
+**Identify Bridges and Structural Holes** The concept of structural holes was introduced by sociologist Ronald Burt. It refers to gaps between non-redundant contacts in a social network. These gaps represent opportunities for information brokerage, which can confer competitive advantages on individuals who bridge them. Structural holes are important because those who bridge these holes have access to diverse information. That is called information advantage. By bridging structural holes, individuals can control the flow of information between otherwise disconnected groups. These individuals tend to have increased opportunities(e.g.career advancement).
+
+A bridge in a network is an edge (or link) that connects two nodes. It provides the only path between two sections of a network. Removing a bridge would increase the network's number of connected components, thereby disconnecting parts of the network. Bridges play a crucial role in networks. The bridges can become bottleneck points, controlling and connecting different components.
+
+**Understand Overall Structure and Patterns** Social network analysis could be used to understand overall structure and patters in the network. These include density (the proportion of potential connections in a network that are actual connections), degree distribution, etc.
+
+# Data Structures
+
+![](images/data%20structures.png)
+
+Photo by [Jonathan H. Morgan](https://www.youtube.com/playlist?list=PL1M5TsfDV6VsyfMHfkDcUW71ADKcUNCUI)
+
+# Zachary's Karate Club case study
+
+We will use the Zachary' s Karate Club case study for our network analysis tutorial. It is a popular dataset for social network analysis. It is called after Wayne W. Zachary, an anthropologist, who observed 34 members of a university karate club over a period of three years from 1970 to 1972. During these three years, a conflict arose between the club's instructor(Mr.Hi) and the club's administrator/president(John A). Because of the conflict, the club split into two. Some of club members stayed with Mr.Hi, establishing a new club. Others found a new instructor or stopped doing karate. Except number 9, Zachary correctly predicted which group each member would join.
+
+Zachary used network analysis to study the social relationships among the club members, specifically their friendships and interactions outside of the club activities. The network is often used to demonstrate the application of community detection algorithms in social network analysis. The dataset itself represents a network where nodes correspond to members of the club, and edges represent the ties or interactions between them. The eventual split of the club into two factions is predicted based on the network's structure, showcasing the power of network analysis in understanding and predicting real-world social dynamics.
+
+Zachary's analysis successfully predicted the factions that members would join after the split based on the strength of their social ties, demonstrating how social network analysis can reveal underlying structures and dynamics within groups. This case study is a classic example in sociology, anthropology, and network science, illustrating how quantitative methods can be applied to understand complex social phenomena. You can read more about the case and data on Wikipedia: <https://en.wikipedia.org/wiki/Zachary%27s_karate_club#cite_note-Data-3>
+
+The pictures below show the group members, the interaction pairs, and the split.
+
+![](images/pairs78.png)
+
+![](images/Screenshot%202024-02-03%20at%201.23.03%20PM-01.png)![](images/Zachary_karate_club_social_network.png)
+
+# Further Readings
+
+-   Introduction to R for Data Science: A LISA 2020 Guidebook by Jacob D. Holster(I have borrowed some of codes from this book)
+-   Community Detection Algorithms: https://towardsdatascience.com/community-detection-algorithms-9bd8951e7dae
+-   [YouTube Channel](https://www.youtube.com/playlist?list=PL1M5TsfDV6VsyfMHfkDcUW71ADKcUNCUI)
+
+```{r}
+#install.packages("igraph")
+#install.packages("intergraph")
+#install.packages("ggnetwork")
+#install.packages("ggraph")
+library(igraph)
+library(readr) 
+library(haven)
+library(tidyverse)
+library(ggnetwork)
+library(intergraph)
+library(ggraph)
+```
+
+# Import and Prepare Data
+
+```{r}
+#setwd("/Users/namigabbasov/Desktop")
+#club<-read_csv("Zacharies_Karate_Club.csv")    ### load data about karate club
+
+club<-read_csv("https://raw.githubusercontent.com/UnitForDataScience/R-for-Social-Science-2024/main/Zacharies_Karate_Club.csv")
+members<- as.character(club$label)             ### extract information about member labels
+nodes <- club$node                             ### extract information about nodes(numbers)
+groups <- club$group                           ### get their group information 
+```
+
+```{r}
+#links<-read_csv("Zacharies_Karate_Club_edges.csv")    ### load data about edges
+links<-read_csv("https://raw.githubusercontent.com/UnitForDataScience/R-for-Social-Science-2024/main/Zacharies_Karate_Club_edges.csv")
+edges<- as.vector(rbind(links$From, links$To))  ### combind "From" and "To" columns and store "edges"
+```
+
+# Create Networks Using Karate Club Data
+
+```{r}
+network <- make_empty_graph(n = length(nodes), directed = F) |>     ### nondirectional 
+  add_edges(edges) 
+network
+```
+
+```{r}
+### set 'group' attribute for every vertex in graph object "network"
+
+network<-set.vertex.attribute(graph = network, name = 'group', index = V(network), value = groups)
+network
+```
+
+# Visualization of Networks
+
+```{r}
+### basic plot with BaseR library 
+
+plot(network)
+```
+
+```{r}
+### add some customization 
+
+plot(network, 
+     vertex.color = "blue",       ### set node color
+     edge.color = "red",          ### set edge color
+     vertex.size = 10,            ### set vertex size
+     vertex.label.color = "red",  ### set label color 
+     vertex.shape = "square",     ### set vertex shape
+     asp = 0,                     ### set aspect ratio 
+     layout = layout_with_fr)     ### set layout to Fruchterman-Reingold 
+```
+
+```{r}
+### Put Nodes in A Circle 
+
+plot(network, 
+     vertex.color = "yellow",       ### set node color
+     edge.color = "blue",          ### set edge color
+     vertex.size = 10,            ### set vertex size
+     vertex.label.color = "red",  ### set label color 
+     vertex.shape = "sphere",     ### set vertex shape
+     asp = 0,                     ### set aspect ratio 
+     layout = layout_in_circle)   ### set layout to layout_in_circle 
+```
+
+```{r}
+### color nodes based on their group (Mr.Hi: 1 or John A: 34)
+
+plot(network, vertex.color = groups, ### set node color to group membership
+     edge.color = 'black',     
+     vertex.size = 10,         
+     vertex.shape = 'rectangle',  
+     asp = 0)                  
+```
+
+```{r}
+### Plot with ggplot2
+
+ggplot(network, aes(x = x, y = y, xend = xend, yend = yend)) + 
+  geom_edges()+
+  geom_nodes()
+```
+
+```{r}
+# Add ggplot customization
+ggplot(network, aes(x = x, y = y, xend = xend, yend = yend)) +      
+  geom_edges(color = 'grey', size = 1, linetype = 'solid') + 
+  geom_nodes(size = 10, color = 'blue', shape = 'circle') +    
+  geom_nodetext(label = members, fontface = "bold") +          
+  theme_bw()                                              
+```
+
+# Who Is More "Important" in this Network?: Measures of Centrality
+
+```{r}
+### 1. Computing Degree Centrality
+
+# Degree centrality measures the number of direct connections each node has
+degree_centrality <- centr_degree(network, mode = 'all')$res
+degree_centrality
+```
+
+```{r}
+### 2. Computing Eigenvector Centrality
+
+# Eigenvector centrality considers not only number of connections a node has,
+# but also the importance of those connections.
+
+eigenvector_centrality<- eigen_centrality(network)$vector
+eigenvector_centrality
+```
+
+```{r}
+### 3. Computing Closeness Centrality
+
+#Closeness centrality measures how close a node is to all other nodes in the network.
+closeness_centrality <- closeness(network)
+closeness_centrality
+```
+
+```{r}
+### 4. Compute Betweenness Centrality
+
+# Betweenness centrality identifies nodes that serve as bridges between other nodes in the network.
+
+betweenness_centrality <- betweenness(network)
+```
+
+```{r}
+### 5. Computing PageRank
+
+# PageRank centrality measures the importance of each node based on the structure of incoming links. It's a measure of influence that takes into account not just quantity but the quality of connections.
+
+pagerank_centrality <- page_rank(network)$vector
+```
+
+```{r}
+### Make a single data frame for easier comparison and visualization
+
+centrality_measures <- data.frame(
+  Nodes = nodes,
+  Members= members,
+  Degree = degree_centrality,
+  Eigenvector = eigenvector_centrality,
+  Closeness = closeness_centrality,
+  Betweenness = betweenness_centrality,
+  PageRank = pagerank_centrality
+)
+
+# next we can arrange based on degree centrality(recall our dplyr tutorial) 
+centrality_measures<- centrality_measures|>
+  arrange(desc(degree_centrality))
+
+# Now let's view our centrality measures data
+print(centrality_measures)
+```
+
+```{r}
+### Plot based on degree centrality measure 
+
+plot(network,                           
+     vertex.color = groups,               ### set vertex/node colors
+     edge.color = 'darkorange',           ### set edge color
+     vertex.size = 5+degree_centrality,   ### set node size(5+ degree centrality score)
+     vertex.shape = 'sphere',             ### set node shape
+     vertex.label.color = "black",        ### set color for labels(e.g. 1,2,3,4,etc)
+     asp = 0,                             ### set ratio of plot width to its height 
+     layout=layout_with_fr)               ### use Fruchterman-Reingold layout
+```
+
+```{r}
+### Plot based on eigenvector centrality measure 
+plot(network,                           
+     vertex.color = groups,                    ### set vertex/node colors
+     edge.color = 'darkorange',                ### set edge color
+     vertex.size = 10+eigenvector_centrality,  ### set node size(10+degree centrality score)
+     vertex.shape = 'sphere',                  ### set node shape
+     vertex.label.color = "black",             ### set color for labels(e.g. 1,2,3,4,etc)
+     asp = 0,                                  ### set ratio of plot width to its height 
+     layout=layout_with_fr)                    ### use Fruchterman-Reingold layout
+```
+
+```{r}
+### Plot based on  closeness centrality measure 
+plot(network,                           
+     vertex.color = groups,                    ### set vertex/node colors
+     edge.color = 'darkorange',                ### set edge color
+     vertex.size = 10+closeness_centrality,    ### set node size(10+degree centrality score)
+     vertex.shape = 'sphere',                  ### set node shape
+     vertex.label.color = "black",             ### set color for labels(e.g. 1,2,3,4,etc)
+     asp = 0,                                  ### set ratio of plot width to its height 
+     layout=layout_with_fr)                    ### use Fruchterman-Reingold layout
+```
+
+```{r}
+### Plot based on betweenness centrality measure 
+plot(network,                           
+     vertex.color = groups,                         ### set vertex/node colors
+     edge.color = 'darkorange',                     ### set edge color
+     vertex.size =5+sqrt(betweenness_centrality),   ### set node size(5+ degree centrality score)
+     vertex.shape = 'sphere',                       ### set node shape
+     vertex.label.color = "black",                  ### set color for labels(e.g. 1,2,3,4,etc)
+     asp = 0,                                       ### set ratio of plot width to its height 
+     layout=layout_with_fr)                         ### use Fruchterman-Reingold layout
+```
+
+```{r}
+### Plot based on PageRank centrality measure 
+plot(network,                           
+     vertex.color = groups,                  ### set vertex/node colors
+     edge.color = 'darkorange',              ### set edge color
+     vertex.size = 10+pagerank_centrality,   ### set node size(5+ degree centrality score)
+     vertex.shape = 'sphere',                ### set node shape
+     vertex.label.color = "black",           ### set color for labels(e.g. 1,2,3,4,etc)
+     asp = 0,                                ### set ratio of plot width to its height 
+     layout=layout_with_fr)                  ### set layout to Fruchterman-Reingold 
+```
+
+```{r}
+# Plotting the network with ggraph
+ggraph(network, layout = 'auto') + 
+  geom_edge_link(color = 'blue', size = 1, linetype = 'solid') + 
+  geom_node_point(aes(color = as.factor(groups), size = 5 + degree_centrality), shape = 16) +
+  geom_node_text(aes(label = members), fontface = "bold", repel = TRUE) +  
+  theme_bw() +
+  labs(title = "Network of Club Members Based on Their Degree Centrality Score",
+       color ="Group")
+
+```
+
+# Community Detection
+
+Community Detection in network analysis is a process used to identify groups (or "communities") within a network that are more densely connected internally than they are with the rest of the network. There are various algorithms/methods for community detection. We will run and plot some of them below.
+
+```{r}
+community_louvain <- cluster_louvain(network)                       ### Louvain method
+plot(community_louvain, network, main = "Louvain Method")           ### plot it
+```
+
+```{r}
+#### Hierarchical Clustering
+community_fastgreedy <- cluster_fast_greedy(network)      
+plot(community_fastgreedy, network, main = "Hierarchical Clustering (Fast Greedy)")
+```
+
+```{r}
+
+### Optimal community structure 
+community_optimal <- cluster_optimal(network)
+plot(community_optimal, network, main = "Optimal Modularity Maximization")
+```
