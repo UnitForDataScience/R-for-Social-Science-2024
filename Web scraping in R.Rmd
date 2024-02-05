@@ -1,0 +1,281 @@
+---
+title: "Web scraping in R"
+author: "Namig"
+date: "2024-04-02"
+output: pdf_document
+---
+
+## What is Web Scraping
+
+Web scraping is the process of automatically collecting information from the Internet sources. This technique involves fetching web pages and extracting the data that you need from them. It is like sending a bot to the website to collect information. 
+
+## Why Do We Need Web Scraping?
+
+1. Gather Information Quickly: Web scraping helps us collect a lot of information from different websites fast. This is super useful for projects that need lots of data, like research or market analysis.
+
+2. Keep Track of Prices: It is great for checking out prices of products on different websites. This way, businesses can stay competitive, and shoppers can find the best deals.
+
+3. Get Data That is Not Available Elsewhere: Sometimes, the information we need is not available through an API or in a ready-to-download format. Scraping lets us access and use this data anyway.
+
+4. Save Time on Manual Work: Instead of spending hours or even days copying information by hand from websites, scraping can do this job in minutes, saving a ton of time.
+
+5. Make Big Data Analysis Possible: By collecting large amounts of data from the web, we can analyze trends, patterns, and insights that help in making better decisions and understanding the world better.
+
+## Web Scaping versus API
+
+APIs are like a set of rules that let different computer programs talk to each other. If a website has an API, it means they are letting developers use their data in a neat and allowed way.
+
+You might wonder why people still scrape websites when APIs can do a lot of stuff. The main difference is how they get the data. With APIs, the website says it is  okay to use their data. But with scraping, people take data without asking the website first. So, using APIs is usually seen as the right thing to do because you have permission.
+
+But, using APIs is not always perfect:
+
+Sometimes, APIs have rules on how much you can ask them for data in a certain amount of time, which can stop you from getting a lot of data quickly. Also, not every website has an API, so sometimes scraping is the only way to get the data you need.
+
+## Legal and Ethical Considerations
+
+When scraping websites, it is important to think about the rules and being fair. Some websites have rules against scraping because it can cause them a lot of computer trouble. To avoid problems, you should:
+
+- Look at the website's  robots.txt file to see if they say scraping is not allowed or only allowed for some parts.
+- Follow any rules about how often you can scrape to avoid getting in trouble or blocked by the website.
+- Be sure to use the information you collect in a way that follows privacy and copyright laws.
+
+## How To Do Web Scraping in R
+
+1.  Making HTTP Requests
+2.  Parsing HTML Content
+3.  Data Extraction
+4.  Data Storage/Processing
+
+
+
+## R Packages for Web Scraping
+
+```{r}
+## packages for web scraping 
+
+#install.packages("rvest")
+#install.packages("httr")
+library(httr)
+library(rvest)
+
+
+
+## additional packages for text analysis 
+
+#install.packages("quanteda")
+#install.packages("stm")
+library(stm)
+library(quanteda)
+```
+
+## Four Primary Steps in Web Scraping
+
+### Making HTTP Requests
+
+To start grabbing information from a website, we first need to ask the website to give us the page's details. We do this by sending a special kind of internet message. "httr" can help with this.  "rvest" makes it even easier because it does two steps in one.
+
+Sending this internet request is the first step in grabbing information from websites because it is like saying "hello" to the website's computer and asking it to share its webpage details with us. This is similar to what happens when you go to a website using your internet browser, but instead, we do it using computer code. Knowing how to send these messages is very important for grabbing information because it is how we get the website's details that we want to look at or use.
+
+- HTTP (Hypertext Transfer Protocol): This is the main way web pages are sent around on the internet.
+- URL (Uniform Resource Locator): This is the web page's address that we want to visit.
+- Method: This tells the website what we want to do. Most of the time, we use something called a GET request to ask for data.
+- Headers: This is extra info we send, like which browser we are using or what kind of information we are okay with getting back. It can also include other details for specific needs.
+```{r}
+### Making an HTTP GET request(with httr)
+
+html_content<- GET("https://www.nytimes.com/")    ### sends GET request to website and retrieves the HTML content
+
+content <- content(html_content, "text", 
+                   encoding = "UTF-8")           ### stores content in plain text format
+
+#content                                         ### view      
+
+cat(substr(content, 1, 500))                     ### Print the first 500 characters to check
+```
+
+
+
+
+```{r}
+### Making an HTTP GET request(with rvest)
+website <- "https://www.nytimes.com/"
+nytimes<- read_html(website)
+```
+
+```{r}
+### Check if request is successful 
+
+html_content<- GET(website)
+status_code(html_content)
+
+### we can make if-else statement to print out the result
+
+if (status_code(html_content) == 200) {
+  message("Successfully fetched and parsed the HTML content.")
+} else {
+  message(paste("Failed to fetch the page. Status code:", status_code(html_content)))
+}
+```
+
+
+### Parsing HTML Content
+
+After we get the HTML content, the next step is to look through it to find the specific info we want.  With rvest, we can easily navigate through the HTML document and pick out parts of it by using CSS selectors or XPath expressions. 
+
+
+CSS Selectors are shortcuts that help us pick out specific parts of a webpage, like boxes or titles, based on their name, type, or other signs.
+
+XPath Expressions are like a map for finding our way around a webpage's code. It helps us move through the webpage's parts, like titles or paragraphs, even if they are tucked away inside other parts. This is super handy for getting data that's hidden or mixed in with other stuff on the page.
+```{r}
+### parse out using CSS selector
+
+news<-nytimes |>
+  html_elements(css = ".summary-class") 
+news
+
+### This function is part of the rvest package and is used to select elements from the HTML document based on the CSS selector provided. 
+### The css = ".summary-class" argument specifies that we want to select all elements that have a class attribute of summary-class.
+### This method is particularly useful for extracting structured data from web pages, such as article summaries, product descriptions, or any other information that is consistently marked up using specific CSS classes.
+
+
+### there are 28 elements in the document that have the class summary-class
+### xml_nodeset: This is the class of the object. It signifies that the object is a collection of XML nodes. 
+### These nodes could be elements, attributes, text, etc., from an XML or HTML document.
+### Not all websites have elements with a .summary-class class
+### HTML elements can also be identified using tag names, IDs, and other attributes. 
+### Combining these can help us create more specific CSS selectors to target exactly the elements we need
+
+### Try Another One
+nytimes |>
+  html_elements(css = "story-wrapper")|>
+  html_text()
+```
+
+```{r}
+### parse out using xpath
+news1<-nytimes|>
+  html_elements(xpath = "//*[contains(@class, 'summary-class')]") 
+news1
+```
+
+
+
+### Data Extraction
+After we figure out which shortcuts (selectors) to use for the information we are interested in, we can start pulling out text, links, and other parts of the webpage. This step is very important in web scraping because it is when we actually get the information we were looking for from the webpage's code. This happens after we've asked a website to show its page and have looked at its code. Regular Expressions are handy for finding and grabbing specific bits of text from the code, like email addresses, phone numbers, or other types of information that follow a certain pattern.
+
+```{r}
+### Extracting titles using CSS selectors
+
+titles <- nytimes |>      
+  html_nodes("h2") |>            ### scrape and extract the text content with a given tag (e.g. h1, h2, body )
+  html_text()                    ### extracts text content from the selected nodes.
+titles
+```
+```{r}
+### Extracting links using CSS selectors
+links <- nytimes |>
+  html_nodes("a") |>             ### selects all anchor tags in the document.
+  html_attr("href")              ### extracts href attribute from each of these tags(typically contains URL)
+links
+```
+
+
+```{r}
+### Text Extraction
+paragraphs <- nytimes |> 
+  html_nodes("p") |> 
+  html_text()
+paragraphs
+```
+
+```{r}
+### Extraction of Image Sources
+images_urls <- nytimes |> 
+  html_nodes("img") |>
+  html_attr("src")
+images_urls
+```
+
+```{r}
+### Extraction of Stories 
+stories<- nytimes |> html_nodes(".story-wrapper a") |> html_text()
+stories
+```
+
+```{r}
+### Table Extraction (if there are tables)
+wiki_link<- "https://en.wikipedia.org/wiki/The_Economist_Democracy_Index"
+wiki<-read_html(wiki_link)
+tables <- wiki |>
+  html_table()
+tables
+```
+## Text Analysis 
+
+Also known as text mining, text analysis is the way of deriving meaningful information from unstructured text. It involves a range of techniques and tools that help to quantify, understand, and make sense of large volumes of unstructured data. At its core, text analysis is the process of transforming these unstructured text data into meaningful insights.  It is used to analyze text-based sources including articles, books, book chapters, emails, messages, social media content, product reviews, documents, and other types of text data to uncover patterns, sentiments, relationships, and topics to elucidate specific social phenomena, inform policy decisions, forecast trends, and beyond.
+
+```{r}
+### Get news text from New York Times 
+
+stories<- nytimes |> 
+  html_nodes(".story-wrapper a") |> 
+  html_text()
+stories
+```
+
+```{r}
+### We can convert to data frame
+text_data<-as.data.frame(stories)
+text_data
+```
+## Make a corpus 
+```{r}
+library(quanteda)
+my_corpus<- corpus(text_data, text_field ="stories")
+```
+
+## Preprocessing 
+```{r}
+corpus_tokens <- tokens(my_corpus,                                     ### tokenize 
+                       what = "word",    
+                       remove_punct = TRUE,                            ### remove punctuation  
+                       remove_symbols = TRUE,                          ### remove symbols 
+                       remove_numbers = TRUE,                          ### remove numbers 
+                       remove_url = TRUE,                              ### remove urls 
+                       remove_separators = TRUE)    
+```
+
+```{r}
+corpus_dfm<- dfm(corpus_tokens,                                           ### lowercase the terms and create DFM
+                       tolower = TRUE)
+```
+
+```{r}
+corpus_dfm<<-  dfm_remove(corpus_dfm,                                     ### remove stopwords and custom words and symbols 
+                        pattern = c(stopwords("english"), "--", "must", "like", "will", "also", "a1", "abba", "abdel", "'" , "-")) 
+```
+
+```{r}
+corpus_dfm<- dfm_wordstem(corpus_dfm,                                     ### stemming  
+                        language = "en")    
+```
+
+```{r}
+corpus_dfm<- dfm_trim(corpus_dfm,
+                      min_termfreq = 1)                              ### remove infrequent words
+                      #max_docfreq = "")                             ### remove frequent words 
+```
+
+
+## Unsupervised Machine Learning Text Analysis: Topic Modeling 
+```{r}
+#lda_model<- stm(corpus_dfm,                                                 
+               #K = 3,
+               #init.type = "LDA", 
+               #seed = 12345,
+               #verbose = TRUE)
+```
+
+
+
+
